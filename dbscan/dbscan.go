@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 	"sync"
+	"unicode"
 )
 
 // Rows is an abstract database rows that dbscan can iterate over and get the data from.
@@ -41,16 +41,23 @@ func ScanAllSets(dsts []interface{}, rows Rows) error {
 // NameMapperFunc is a function type that maps a struct field name to the database column name.
 type NameMapperFunc func(string) string
 
-var (
-	matchFirstCapRe = regexp.MustCompile("(.)([A-Z][a-z]+)")
-	matchAllCapRe   = regexp.MustCompile("([a-z0-9])([A-Z])")
-)
-
 // SnakeCaseMapper is a NameMapperFunc that maps struct field to snake case.
 func SnakeCaseMapper(str string) string {
-	snake := matchFirstCapRe.ReplaceAllString(str, "${1}_${2}")
-	snake = matchAllCapRe.ReplaceAllString(snake, "${1}_${2}")
-	return strings.ToLower(snake)
+	var sb strings.Builder
+	sb.Grow(len(str) + 2)
+
+	var lastCh rune
+	for i, ch := range str {
+		isValidLastCh := lastCh == '_' || unicode.IsLower(lastCh) || unicode.IsNumber(lastCh)
+		if i > 0 && isValidLastCh && unicode.IsUpper(ch) {
+			sb.WriteByte('_')
+		}
+
+		sb.WriteRune(unicode.ToLower(ch))
+		lastCh = ch
+	}
+
+	return sb.String()
 }
 
 // API is the core type in dbscan. It implements all the logic and exposes functionality available in the package.

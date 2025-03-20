@@ -107,7 +107,7 @@ func TestScanAll(t *testing.T) {
 			query: `
 				SELECT *
 				FROM (
-					VALUES ('{"key1": "foo val 1", "key2": "bar val 1"}'), 
+					VALUES ('{"key1": "foo val 1", "key2": "bar val 1"}'),
                            ('{"key1": "foo val 2", "key2": "bar val 2"}')
 				) AS t (foo)
 			`,
@@ -121,7 +121,7 @@ func TestScanAll(t *testing.T) {
 			query: `
 				SELECT *
 				FROM (
-					VALUES ('{"key1": "foo val 1", "key2": "bar val 1"}'::JSON), 
+					VALUES ('{"key1": "foo val 1", "key2": "bar val 1"}'::JSON),
                            ('{"key1": "foo val 2", "key2": "bar val 2"}'::JSON)
 				) AS t (foo)
 			`,
@@ -135,7 +135,7 @@ func TestScanAll(t *testing.T) {
 			query: `
 				SELECT *
 				FROM (
-					VALUES (NULL::JSON), 
+					VALUES (NULL::JSON),
                            (NULL::JSON)
 				) AS t (foo)
 			`,
@@ -425,4 +425,36 @@ func prepareTestDB(testDB *pgxpool.Pool) (err error) {
 	`)
 
 	return err
+}
+
+func TestSnakeCaseMapper(t *testing.T) {
+	got := dbscan.SnakeCaseMapper("Id")
+	assert.Equal(t, "id", got)
+
+	got = dbscan.SnakeCaseMapper("ID")
+	assert.Equal(t, "id", got)
+
+	got = dbscan.SnakeCaseMapper("UserID")
+	assert.Equal(t, "user_id", got)
+
+	got = dbscan.SnakeCaseMapper("CreatedAt")
+	assert.Equal(t, "created_at", got)
+
+	got = dbscan.SnakeCaseMapper("Created_At")
+	assert.Equal(t, "created__at", got)
+
+	got = dbscan.SnakeCaseMapper("_createdAt")
+	assert.Equal(t, "_created_at", got)
+
+	got = dbscan.SnakeCaseMapper("__createdAt")
+	assert.Equal(t, "__created_at", got)
+
+	got = dbscan.SnakeCaseMapper("Created42At")
+	assert.Equal(t, "created42_at", got)
+
+	got = dbscan.SnakeCaseMapper("あcreated42At")
+	assert.Equal(t, "あcreated42_at", got)
+
+	got = dbscan.SnakeCaseMapper("Createdあ42At")
+	assert.Equal(t, "createdあ42_at", got)
 }
